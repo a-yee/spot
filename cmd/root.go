@@ -1,10 +1,12 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 
+	"github.com/a-yee/spot/auth"
 	"github.com/a-yee/spot/configs"
 	"github.com/spf13/cobra"
 )
@@ -30,7 +32,14 @@ var rootCmd = cobra.Command{
 			return err
 		}
 
-		fmt.Println(c)
+		client := auth.NewAPIClient(c)
+		// use the client to make calls that require authorization
+		user, err := client.CurrentUser(context.Background())
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println("You are logged in as:", user.ID)
+
 		return nil
 	},
 }

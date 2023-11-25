@@ -5,6 +5,11 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
+)
+
+var (
+	RedirectURLDefault = "http://localhost:8080/callback"
 )
 
 // Config defines valid configuration parameters for spot app
@@ -32,6 +37,10 @@ func Load(configFile string) (Config, error) {
 	var c Config
 	json.Unmarshal(configBytes, &c)
 
+	if c.RedirectURL == "" {
+		c.RedirectURL = RedirectURLDefault
+	}
+
 	return c, nil
 }
 
@@ -49,4 +58,14 @@ func DefaultPath() (string, error) {
 	}
 
 	return filepath.Join(home, ".config", "spot", "config.json"), nil
+}
+
+func (c Config) RedirectPort() string {
+	pattern := regexp.MustCompile("(:[0-9]+)/")
+
+	if match := pattern.FindStringSubmatch(c.RedirectURL); match != nil {
+		return match[1]
+	}
+
+	return ""
 }
