@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 
+	style "github.com/a-yee/spot/ui/Style"
+	"github.com/a-yee/spot/ui/keymap"
 	api "github.com/zmb3/spotify/v2"
 )
 
@@ -11,6 +13,8 @@ type AppInfo struct {
 	API    *api.Client
 	Width  int
 	Height int
+	Style  *style.Style
+	KeyMap *keymap.KeyMap
 }
 
 func NewAppInfo(
@@ -28,5 +32,13 @@ func NewAppInfo(
 		API:    apiClient,
 		Width:  width,
 		Height: height,
+		Style:  style.DefaultStyles(),
+		KeyMap: keymap.DefaultKeyMap(),
 	}
+}
+
+// Set the width and height of the component
+func (a *AppInfo) SetSize(width, height int) {
+	a.Width = width
+	a.Height = height
 }

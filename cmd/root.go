@@ -73,7 +73,7 @@ var rootCmd = cobra.Command{
 			return err
 		}
 
-		//client.Play(context.Background())
+		client.Play(context.Background())
 
 		ai := app.NewAppInfo(
 			context.Background(),
@@ -83,6 +83,7 @@ var rootCmd = cobra.Command{
 		)
 
 		pbar := playbar.NewPlaybar(ai)
+		//f := footer.New(ai, pbar)
 		_, err = tea.NewProgram(pbar, tea.WithAltScreen()).Run()
 
 		//spot := ui.NewAppModel(ai)

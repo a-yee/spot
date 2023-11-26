@@ -2,7 +2,6 @@ package playbar
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"time"
 
@@ -25,9 +24,7 @@ type Playbar struct {
 	trackDuration float64
 }
 
-// TODO: Modify for use with other components
 func NewPlaybar(ai app.AppInfo) Playbar {
-	// TODO: add track progress and duration for reloading current played state
 	return Playbar{
 		app: ai,
 		progress: progress.New(
@@ -70,18 +67,21 @@ func (p Playbar) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (p Playbar) View() string {
 	pad := strings.Repeat(" ", padding)
-	songDuration := fmt.Sprintf(
-		"%s",
-		time.Duration(p.trackDuration)*time.Millisecond)
+	songProgress := (time.Duration(p.trackProgress) * time.Millisecond).
+		Round(time.Second).
+		String()
+	songDuration := (time.Duration(p.trackDuration) * time.Millisecond).
+		Round(time.Second).
+		String()
 	return "\n" +
-		pad + p.progress.View() + pad + songDuration + pad + "\n\n" +
-		pad + helpStyle("Press any key to quit")
+		pad + p.progress.View() + pad +
+		songProgress + " / " + songDuration + pad + "\n\n"
 }
 
 type tickMsg time.Time
 
 func tickCmd() tea.Cmd {
-	return tea.Tick(time.Second*1, func(t time.Time) tea.Msg {
+	return tea.Tick(time.Millisecond*500, func(t time.Time) tea.Msg {
 		return tickMsg(t)
 	})
 }
