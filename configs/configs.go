@@ -17,6 +17,9 @@ type Config struct {
 	ClientID     string `json:"client_id"`
 	ClientSecret string `json:"client_secret"`
 	RedirectURL  string `json:"redirect_url"`
+
+	// spotifyd player name
+	DeviceName string `json:"device_name"`
 }
 
 // Load creates a new Config struct with the values stored in the given file.

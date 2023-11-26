@@ -6,12 +6,10 @@ import (
 	"log"
 	"os"
 
-	"github.com/a-yee/spot/app"
 	"github.com/a-yee/spot/auth"
 	"github.com/a-yee/spot/configs"
-	"github.com/a-yee/spot/ui"
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
+	api "github.com/zmb3/spotify/v2"
 )
 
 var configFile string
@@ -35,19 +33,45 @@ var rootCmd = cobra.Command{
 			return err
 		}
 
-		ai := app.NewAppInfo(
-			context.Background(),
-			auth.NewAPIClient(c),
-			0,
-			0,
-		)
+		client := auth.NewAPIClient(c)
+		players, err := client.PlayerDevices(context.Background())
+		if err != nil {
+			return err
+		}
 
-		spot := ui.NewAppModel(ai)
-		_, err = tea.NewProgram(
-			spot,
-			tea.WithAltScreen(),
-			//tea.WithMouseCellMotion(),
-		).Run()
+		var spotDeviceID api.ID
+		for _, device := range players {
+			if device.Name == c.DeviceName {
+				spotDeviceID = device.ID
+				break
+			}
+		}
+		if spotDeviceID == "" {
+			return fmt.Errorf("Need to define device_name in configs or CLI")
+		}
+
+		// TODO: refactor to have smooth transition of player control
+		err = client.TransferPlayback(
+			context.Background(),
+			api.ID(spotDeviceID),
+			true)
+		if err != nil {
+			return err
+		}
+		client.Play(context.Background())
+		//ai := app.NewAppInfo(
+		//	context.Background(),
+		//	auth.NewAPIClient(c),
+		//	0,
+		//	0,
+		//)
+
+		//spot := ui.NewAppModel(ai)
+		//_, err = tea.NewProgram(
+		//	spot,
+		//	tea.WithAltScreen(),
+		//	//tea.WithMouseCellMotion(),
+		//).Run()
 		return err
 	},
 }
