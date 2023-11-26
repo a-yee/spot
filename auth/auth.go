@@ -46,6 +46,7 @@ func NewAPIClient(config configs.Config) *api.Client {
 		apiauth.WithScopes(
 			apiauth.ScopeUserReadPrivate,
 			apiauth.ScopeUserReadPlaybackState,
+			apiauth.ScopeUserModifyPlaybackState,
 		))
 
 	// Randomly generate data for oauth2 request
