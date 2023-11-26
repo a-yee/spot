@@ -6,8 +6,11 @@ import (
 	"log"
 	"os"
 
+	"github.com/a-yee/spot/app"
 	"github.com/a-yee/spot/auth"
 	"github.com/a-yee/spot/configs"
+	"github.com/a-yee/spot/ui"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 )
 
@@ -32,15 +35,20 @@ var rootCmd = cobra.Command{
 			return err
 		}
 
-		client := auth.NewAPIClient(c)
-		// use the client to make calls that require authorization
-		user, err := client.CurrentUser(context.Background())
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println("You are logged in as:", user.ID)
+		ai := app.NewAppInfo(
+			context.Background(),
+			auth.NewAPIClient(c),
+			0,
+			0,
+		)
 
-		return nil
+		spot := ui.NewAppModel(ai)
+		_, err = tea.NewProgram(
+			spot,
+			tea.WithAltScreen(),
+			//tea.WithMouseCellMotion(),
+		).Run()
+		return err
 	},
 }
 
