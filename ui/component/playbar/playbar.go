@@ -9,10 +9,12 @@ import (
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/muesli/reflow/truncate"
 )
 
 var (
-	padding = 2
+	padding       = 8
+	maxTrackWidth = 20
 )
 
 var helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).Render
@@ -22,10 +24,11 @@ type Playbar struct {
 	progress      progress.Model
 	trackProgress float64
 	trackDuration float64
+	track         string
 }
 
-func NewPlaybar(ai app.AppInfo) Playbar {
-	return Playbar{
+func NewPlaybar(ai app.AppInfo) *Playbar {
+	return &Playbar{
 		app: ai,
 		progress: progress.New(
 			progress.WithDefaultGradient(),
@@ -34,14 +37,18 @@ func NewPlaybar(ai app.AppInfo) Playbar {
 	}
 }
 
-func (p Playbar) Init() tea.Cmd {
+func (p *Playbar) SetSize(width, height int) {
+	p.app.SetSize(width, height)
+}
+
+func (p *Playbar) Init() tea.Cmd {
 	return tickCmd()
 }
 
-func (p Playbar) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (p *Playbar) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		p.progress.Width = msg.Width - padding*4 - 11
+		p.SetSize(msg.Width, 0)
 		return p, nil
 
 	case tea.KeyMsg:
@@ -50,8 +57,13 @@ func (p Playbar) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tickMsg:
 		cp, _ := p.app.API.PlayerCurrentlyPlaying(context.Background())
 
-		p.trackProgress = float64(cp.Progress)
-		p.trackDuration = float64(cp.Item.Duration)
+		p.trackProgress = 0.0
+		p.trackDuration = 0.0
+		if cp.Item != nil {
+			p.track = cp.Item.Name
+			p.trackProgress = float64(cp.Progress)
+			p.trackDuration = float64(cp.Item.Duration)
+		}
 		cmd := p.progress.SetPercent(p.trackProgress / p.trackDuration)
 		return p, tea.Batch(tickCmd(), cmd)
 
@@ -65,17 +77,48 @@ func (p Playbar) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 }
 
-func (p Playbar) View() string {
-	pad := strings.Repeat(" ", padding)
-	songProgress := (time.Duration(p.trackProgress) * time.Millisecond).
+func (p *Playbar) View() string {
+	s := p.app.Style
+	w := lipgloss.Width
+
+	//pad := s.PlaybarPadding.Render(strings.Repeat(" ", padding))
+	pad := strings.Repeat("-", padding)
+	// TODO: fix the padding around short track names
+	t := truncate.StringWithTail(
+		p.track,
+		uint(maxTrackWidth-s.PlaybarTrack.GetHorizontalFrameSize()),
+		"…",
+	)
+	track := s.PlaybarTrack.
+		Width(maxTrackWidth).
+		Render(t)
+	trackProgress := (time.Duration(p.trackProgress) * time.Millisecond).
 		Round(time.Second).
 		String()
-	songDuration := (time.Duration(p.trackDuration) * time.Millisecond).
+	trackDuration := (time.Duration(p.trackDuration) * time.Millisecond).
 		Round(time.Second).
 		String()
-	return "\n" +
-		pad + p.progress.View() + pad +
-		songProgress + " / " + songDuration + pad + "\n\n"
+	playProgress := s.PlaybarProgress.Render(
+		trackProgress + " / " + trackDuration)
+
+	help := s.PlaybarHelp.Render("? help")
+	// TODO: fix the values to prevent bar from yoyo-ing in size
+	maxWidth := p.app.Width - w(track) - w(playProgress) - w(help) - 4*padding
+	p.progress.Width = maxWidth
+
+	return lipgloss.NewStyle().MaxWidth(p.app.Width).
+		Render(
+			lipgloss.JoinHorizontal(lipgloss.Top,
+				track,
+				pad,
+				pad,
+				p.progress.View(),
+				pad,
+				pad,
+				playProgress,
+				help,
+			),
+		)
 }
 
 type tickMsg time.Time

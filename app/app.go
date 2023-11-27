@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 
-	style "github.com/a-yee/spot/ui/Style"
 	"github.com/a-yee/spot/ui/keymap"
+	style "github.com/a-yee/spot/ui/style"
 	api "github.com/zmb3/spotify/v2"
 )
 
