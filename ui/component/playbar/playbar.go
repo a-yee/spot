@@ -13,11 +13,9 @@ import (
 )
 
 var (
-	padding       = 8
+	padding       = 2
 	maxTrackWidth = 20
 )
-
-var helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#626262")).Render
 
 type Playbar struct {
 	app           app.AppInfo
@@ -25,6 +23,7 @@ type Playbar struct {
 	trackProgress float64
 	trackDuration float64
 	track         string
+	playing       bool
 }
 
 func NewPlaybar(ai app.AppInfo) *Playbar {
@@ -35,6 +34,14 @@ func NewPlaybar(ai app.AppInfo) *Playbar {
 			//progress.WithoutPercentage(),
 		),
 	}
+}
+
+func (p *Playbar) IsPlaying() bool {
+	return p.playing
+}
+
+func (p *Playbar) SetPlaying(play bool) {
+	p.playing = play
 }
 
 func (p *Playbar) SetSize(width, height int) {
@@ -50,9 +57,6 @@ func (p *Playbar) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		p.SetSize(msg.Width, 0)
 		return p, nil
-
-	case tea.KeyMsg:
-		return p, tea.Quit
 
 	case tickMsg:
 		cp, _ := p.app.API.PlayerCurrentlyPlaying(context.Background())
@@ -81,16 +85,19 @@ func (p *Playbar) View() string {
 	s := p.app.Style
 	w := lipgloss.Width
 
-	//pad := s.PlaybarPadding.Render(strings.Repeat(" ", padding))
-	pad := strings.Repeat("-", padding)
+	pad := strings.Repeat(" ", padding)
 	// TODO: fix the padding around short track names
+	trackWidth := len(p.track)
+	if len(p.track) > maxTrackWidth {
+		trackWidth = maxTrackWidth
+	}
 	t := truncate.StringWithTail(
 		p.track,
-		uint(maxTrackWidth-s.PlaybarTrack.GetHorizontalFrameSize()),
+		uint(trackWidth-s.PlaybarTrack.GetHorizontalFrameSize()),
 		"…",
 	)
 	track := s.PlaybarTrack.
-		Width(maxTrackWidth).
+		Width(trackWidth).
 		Render(t)
 	trackProgress := (time.Duration(p.trackProgress) * time.Millisecond).
 		Round(time.Second).
@@ -124,7 +131,7 @@ func (p *Playbar) View() string {
 type tickMsg time.Time
 
 func tickCmd() tea.Cmd {
-	return tea.Tick(time.Millisecond*500, func(t time.Time) tea.Msg {
+	return tea.Tick(time.Second*1, func(t time.Time) tea.Msg {
 		return tickMsg(t)
 	})
 }

@@ -9,7 +9,8 @@ import (
 	"github.com/a-yee/spot/app"
 	"github.com/a-yee/spot/auth"
 	"github.com/a-yee/spot/configs"
-	"github.com/a-yee/spot/ui/component/playbar"
+	"github.com/a-yee/spot/ui"
+	"github.com/a-yee/spot/ui/component/footer"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 	api "github.com/zmb3/spotify/v2"
@@ -50,7 +51,8 @@ var rootCmd = cobra.Command{
 			}
 		}
 		if spotDeviceID == "" {
-			return fmt.Errorf("Need to define device_name in configs or CLI")
+			return fmt.Errorf("Either need to restart spotifyd or " +
+				"missing/not recognized device_name in configs")
 		}
 
 		playerState, err := client.PlayerState(context.Background())
@@ -73,7 +75,7 @@ var rootCmd = cobra.Command{
 			return err
 		}
 
-		client.Play(context.Background())
+		// client.Play(context.Background())
 
 		ai := app.NewAppInfo(
 			context.Background(),
@@ -82,16 +84,13 @@ var rootCmd = cobra.Command{
 			0,
 		)
 
-		pbar := playbar.NewPlaybar(ai)
-		//f := footer.New(ai, pbar)
-		_, err = tea.NewProgram(pbar, tea.WithAltScreen()).Run()
-
-		//spot := ui.NewAppModel(ai)
-		//_, err = tea.NewProgram(
-		//	spot,
-		//	tea.WithAltScreen(),
-		//	//tea.WithMouseCellMotion(),
-		//).Run()
+		spot := ui.NewAppModel(ai)
+		spot.SetFooter(footer.New(ai, spot))
+		_, err = tea.NewProgram(
+			spot,
+			tea.WithAltScreen(),
+			//tea.WithMouseCellMotion(),
+		).Run()
 		return err
 	},
 }
