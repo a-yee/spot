@@ -8,6 +8,7 @@ import (
 	"github.com/a-yee/spot/app"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/lipgloss/table"
 )
 
 type ShuffleState bool
@@ -99,25 +100,43 @@ func (i *PlayInfo) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (i *PlayInfo) View() string {
 
-	s := i.app.Style
-	pad := s.PlayInfoPadding.Render(" ")
-	t := s.PlayInfoPadding
+	infoBar := table.New().Width(i.app.Width)
 
+	w := lipgloss.Width
+	s := i.app.Style
+	section := s.PlayInfoSection
+
+	track := s.PlayInfoTrack.Render("Playing: " + i.Track)
+	sep := s.PlayInfoSep.Render("|")
 	controls := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		t.Render("shuffle: "+i.Shuffle.String()),
-		pad,
-		t.Render("repeat: "+i.Repeat.String()),
-		pad,
-		t.Render("volume: "+fmt.Sprintf("%d", i.Volume)+"%"),
+		section.Render("shuffle: "+i.Shuffle.String()),
+		sep,
+		section.Render("repeat: "+i.Repeat.String()),
+		sep,
+		section.Render("volume: "+fmt.Sprintf("%d", i.Volume)+"%"),
+	)
+	padding1 := s.PlayInfoPadding.Render(
+		strings.Repeat(" ", i.app.Width-w(track)-w(controls)-8),
+	)
+	topLine := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		track,
+		padding1,
+		controls,
 	)
 
-	return lipgloss.JoinVertical(
+	artists := s.PlayInfoTrack.Render("By: " + strings.Join(i.Artists, ", "))
+	bottomLine := lipgloss.JoinHorizontal(
 		lipgloss.Top,
-		controls,
-		s.PlayInfoTrack.Render("Playing: "+i.Track),
-		s.PlayInfoTrack.Render(strings.Join(i.Artists, ", ")),
+		artists,
 	)
+
+	infoBar.Row(topLine)
+	infoBar.Row(bottomLine)
+
+	return infoBar.Render()
 }
 
-type TogglePlayInfoMsg struct{}
+// TODO: might be able to remove later
+//type TogglePlayInfoMsg struct{}
